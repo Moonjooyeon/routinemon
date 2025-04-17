@@ -6,11 +6,19 @@ const RoutineStartPage = () => {
     const [goal, setGoal] = useState('');
     const [keywords, setKeywords] = useState('');
     const [routines, setRoutines] = useState<string[]>([]);
+    const [selectedRoutine, setSelectedRoutine] = useState<string | null>(null);
+    const [editedRoutine, setEditedRoutine] = useState<string>('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [confirmed, setConfirmed] = useState(false);
     const [loading, setLoading] = useState(false);
     const { survey } = useSurvey();
 
     const handleGenerate = async () => {
         setLoading(true);
+        setRoutines([]);
+        setSelectedRoutine(null);
+        setEditedRoutine('');
+        setConfirmed(false);
         try {
             const prompt = `당신은 루틴 코치입니다. 사용자의 목표는 "${goal}"이며, 연관된 키워드는 "${keywords}"입니다.
 
@@ -41,7 +49,7 @@ const RoutineStartPage = () => {
 
 1. 📘 루틴 제목
 - 목표: 
-- 행동: `;
+- 행동:`;
 
             const response = await chatWithGPT(prompt);
             const parsed = response
@@ -58,9 +66,14 @@ const RoutineStartPage = () => {
         }
     };
 
+    const handleConfirm = () => {
+        setConfirmed(true);
+    };
+
     return (
         <div style={{ maxWidth: '700px', margin: '2rem auto', padding: '1rem' }}>
             <h2>🎯 나만의 루틴 만들기</h2>
+
             <input
                 type="text"
                 placeholder="목표를 입력하세요 (예: 감정 일기 습관 만들기)"
@@ -75,17 +88,75 @@ const RoutineStartPage = () => {
                 onChange={(e) => setKeywords(e.target.value)}
                 style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem' }}
             />
-            <button onClick={handleGenerate} disabled={loading}>
+            <button onClick={handleGenerate} disabled={loading} style={{ marginBottom: '1rem' }}>
                 {loading ? '생성 중...' : '루틴 생성하기'}
             </button>
 
             <div style={{ marginTop: '2rem' }}>
                 {routines.map((routine, idx) => (
-                    <div key={idx} style={{ marginBottom: '1.5rem' }}>
-                        <strong>{idx + 1}.</strong>
-                        <pre>{routine}</pre>
-                    </div>
+                    <button
+                        key={idx}
+                        onClick={() => {
+                            setSelectedRoutine(routine);
+                            setEditedRoutine(routine);
+                            setIsEditing(false);
+                            setConfirmed(false);
+                        }}
+                        style={{
+                            display: 'block',
+                            width: '100%',
+                            textAlign: 'left',
+                            marginBottom: '1rem',
+                            padding: '1rem',
+                            borderRadius: '8px',
+                            border: selectedRoutine === routine ? '2px solid #007bff' : '1px solid #ccc',
+                            backgroundColor: selectedRoutine === routine ? '#eef6ff' : '#fff',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <strong>{idx + 1}.</strong> {routine}
+                    </button>
                 ))}
+
+                {selectedRoutine && (
+                    <div style={{ marginTop: '2rem' }}>
+                        <h3>✅ 선택한 루틴</h3>
+                        {isEditing ? (
+                            <>
+                                <textarea
+                                    value={editedRoutine}
+                                    onChange={(e) => setEditedRoutine(e.target.value)}
+                                    rows={6}
+                                    style={{ width: '100%', padding: '1rem', borderRadius: '8px' }}
+                                />
+                                <button onClick={() => { setIsEditing(false); }} style={{ marginTop: '0.5rem' }}>
+                                    수정 완료
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <pre style={{ whiteSpace: 'pre-wrap', padding: '1rem', background: '#f4f4f4', borderRadius: '8px' }}>
+                                    {editedRoutine}
+                                </pre>
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <button onClick={() => setIsEditing(true)} style={{ marginRight: '1rem' }}>
+                                        ✏️ 수정하기
+                                    </button>
+                                    <button onClick={handleConfirm}>
+                                        ✅ 이대로 진행하기
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {confirmed && (
+                    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e0ffe0', borderRadius: '8px' }}>
+                        <strong>🎉 선택된 루틴이 확정되었습니다!</strong>
+                        <p style={{ marginTop: '0.5rem' }}>{editedRoutine}</p>
+                    </div>
+                )}
             </div>
         </div>
     );

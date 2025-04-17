@@ -7,17 +7,6 @@ const PersonalityPage = () => {
 
     return (
         <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-            <h2>당신은 어떤 유형에 가까운가요?</h2>
-            <select
-                value={survey.personality}
-                onChange={(e) => setSurvey({ ...survey, personality: e.target.value })}
-            >
-                <option value="">선택</option>
-                <option value="계획형">계획형</option>
-                <option value="유연형">유연형</option>
-                <option value="귀찮음 방지형">귀찮음 방지형</option>
-            </select>
-
             <h2 style={{ marginTop: '2rem' }}>실패했을 때 어떤 피드백이 위로가 되나요?</h2>
             <select
                 value={survey.feedbackStyle}

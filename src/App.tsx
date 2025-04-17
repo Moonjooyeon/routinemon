@@ -7,9 +7,10 @@ import TimePage from './pages/TimePage';
 import RoutineTime from './pages/RoutineTime';
 import PersonalityPage from './pages/PersonalityPage';
 import EmotionPage from './pages/EmotionPage';
-import ObstaclePage from './pages/ObstaclePage';
 import PartnerPage from './pages/PartnerPage';
 import SummaryPage from './pages/SummaryPage';
+import RoutineListPage from './pages/RoutineListPage';
+
 
 const App = () => {
     // App.tsx
@@ -21,9 +22,10 @@ const App = () => {
                 <Route path="/time-duration" element={<RoutineTime/>}/>
                 <Route path="/personality" element={<PersonalityPage/>}/>
                 <Route path="/emotion" element={<EmotionPage/>}/>
-                <Route path="/obstacle" element={<ObstaclePage/>}/>
                 <Route path="/partner" element={<PartnerPage/>}/>
                 <Route path="/summary" element={<SummaryPage/>}/>
+                <Route path="/routines" element={<RoutineListPage />} />
+
             </Routes>
         </SurveyProvider>
     );
