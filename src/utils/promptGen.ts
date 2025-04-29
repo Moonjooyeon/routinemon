@@ -11,7 +11,6 @@ export const generateRoutinePrompt = (survey: SurveyContextType['survey']): stri
         selfState,
         emotions,
         obstacle,
-        partnerType,
     } = survey;
 
     return `당신은 사용자의 감정과 행동 패턴을 기반으로 루틴을 설계하는 루틴 생성 코치입니다.
@@ -25,7 +24,6 @@ export const generateRoutinePrompt = (survey: SurveyContextType['survey']): stri
 - 현재 상태: ${selfState}
 - 자주 드는 감정: ${emotions.join(', ')}
 - 루틴 지속 실패 이유: ${obstacle}
-- 캐릭터 파트너: ${partnerType}
 
 🎯 요청:
 사용자에게 적합한 **감정적으로 몰입 가능한 루틴 4가지를 추천**해주세요.

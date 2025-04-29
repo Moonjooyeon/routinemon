@@ -14,7 +14,7 @@ const PartnerPage = () => {
 
     return (
         <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-            <h2>나랑 함께할 루틴 친구는 누구?</h2>
+            <h2>나랑 함께할 성격의 루틴친구는 누구?</h2>
             {partnerOptions.map((option) => (
                 <label key={option.value} style={{ display: 'block', marginBottom: '0.5rem' }}>
                     <input

@@ -7,9 +7,9 @@ import TimePage from './pages/TimePage';
 import RoutineTime from './pages/RoutineTime';
 import PersonalityPage from './pages/PersonalityPage';
 import EmotionPage from './pages/EmotionPage';
-import PartnerPage from './pages/PartnerPage';
 import SummaryPage from './pages/SummaryPage';
 import RoutineListPage from './pages/RoutineListPage';
+import RoutineEditPage from './pages/RoutineEditPage';
 
 
 const App = () => {
@@ -22,9 +22,10 @@ const App = () => {
                 <Route path="/time-duration" element={<RoutineTime/>}/>
                 <Route path="/personality" element={<PersonalityPage/>}/>
                 <Route path="/emotion" element={<EmotionPage/>}/>
-                <Route path="/partner" element={<PartnerPage/>}/>
                 <Route path="/summary" element={<SummaryPage/>}/>
                 <Route path="/routines" element={<RoutineListPage />} />
+                <Route path="/routines/:id/edit" element={<RoutineEditPage />} />
+
 
             </Routes>
         </SurveyProvider>

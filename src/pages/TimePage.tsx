@@ -5,22 +5,39 @@ const TimePage = () => {
     const { survey, setSurvey } = useSurvey();
     const navigate = useNavigate();
 
+    const handleTimeZoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value, checked } = e.target;
+        let updatedExecutionTimes = survey.execution_times || [];
+
+        if (checked) {
+            // 추가
+            updatedExecutionTimes.push({ time_zone: value, duration: 0 });
+        } else {
+            // 제거
+            updatedExecutionTimes = updatedExecutionTimes.filter((item: any) => item.time_zone !== value);
+        }
+
+        setSurvey({ ...survey, execution_times: updatedExecutionTimes });
+    };
+
     return (
         <div style={{ padding: '2rem' }}>
             <h2>언제가 당신의 루틴 타임인가요?</h2>
             <p>"하루 중, 나랑 제일 잘 맞는 시간은 언제예요?"</p>
-            <p>루틴 추천에 활용할게요! </p>
 
-            <select
-                value={survey.timeZone}
-                onChange={(e) => setSurvey({ ...survey, timeZone: e.target.value })}
-            >
-                <option value="">선택하세요</option>
-                <option value="아침 (6~9시)">아침 햇살과 함께 시작해볼래요 (6~9시)</option>
-                <option value="점심 (12~14시)">점심시간 짬짬이 (12~14시)</option>
-                <option value="저녁 (18~22시)">하루를 정리하며 차분히 (18~22시)</option>
-                <option value="취침 전 (22~24시)">잠들기 직전, 나에게 집중하는 시간 (22~24시)</option>
-            </select>
+            {["아침", "점심", "저녁"].map((zone) => (
+                <div key={zone}>
+                    <label>
+                        <input
+                            type="checkbox"
+                            value={zone}
+                            checked={survey.execution_times?.some((item: any) => item.time_zone === zone)}
+                            onChange={handleTimeZoneChange}
+                        />
+                        {zone}
+                    </label>
+                </div>
+            ))}
 
             <div style={{ marginTop: '2rem' }}>
                 <button onClick={() => navigate('/time-duration')}>다음</button>

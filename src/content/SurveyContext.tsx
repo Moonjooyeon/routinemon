@@ -1,24 +1,41 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
+export interface ExecutionTime {
+    time_zone: string;
+    duration: number;
+}
+
+interface Survey {
+    goals: string[];
+    timeZone: string;
+    execution_times: ExecutionTime[];
+    timePerRoutine: string;
+    feedbackStyle: string;
+    personality: string;
+    selfState: string;
+    emotions: string[];
+    obstacle: string;
+}
+
 interface SurveyProviderProps {
     children: ReactNode;
 }
 
-const initialSurvey = {
-    goals: [] as string[],
+const initialSurvey: Survey = {
+    goals: [],
     timeZone: '',
+    execution_times: [],
     timePerRoutine: '',
     feedbackStyle: '',
     personality: '',
     selfState: '',
-    emotions: [] as string[],
-    obstacle: '',
-    partnerType: '',
+    emotions: [],
+    obstacle: ''
 };
 
 export type SurveyContextType = {
-    survey: typeof initialSurvey;
-    setSurvey: React.Dispatch<React.SetStateAction<typeof initialSurvey>>;
+    survey: Survey;
+    setSurvey: React.Dispatch<React.SetStateAction<Survey>>;
 };
 
 const SurveyContext = createContext<SurveyContextType | null>(null);
@@ -30,7 +47,7 @@ export const useSurvey = () => {
 };
 
 export const SurveyProvider = ({ children }: SurveyProviderProps) => {
-    const [survey, setSurvey] = useState(initialSurvey);
+    const [survey, setSurvey] = useState<Survey>(initialSurvey);
 
     return (
         <SurveyContext.Provider value={{ survey, setSurvey }}>

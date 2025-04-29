@@ -60,7 +60,7 @@ const EmotionPage = () => {
             </label>
 
             <div style={{ marginTop: '2rem' }}>
-                <button onClick={() => navigate('/partner')}>다음</button>
+                <button onClick={() => navigate('/summary')}>다음</button>
             </div>
         </div>
     );

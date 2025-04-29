@@ -32,6 +32,20 @@ const RoutineListPage = () => {
         );
     };
 
+    const handleDelete = async (id: number) => {
+        const confirmed = window.confirm("정말 삭제하시겠어요? 지금까지의 기록은 사라져요 🥺");
+        if (!confirmed) return;
+
+        try {
+            await axios.delete(`https://your-backend-url.com/routines/${id}`);
+            setRoutines((prev) => prev.filter((r) => r.id !== id));
+            console.log("✅ 루틴 삭제 완료");
+        } catch (err) {
+            console.error("❌ 루틴 삭제 실패:", err);
+        }
+    };
+
+
     return (
         <div className="p-4 max-w-xl mx-auto">
             <h2 className="text-xl font-semibold mb-4">오늘의 루틴</h2>
@@ -64,6 +78,12 @@ const RoutineListPage = () => {
                                 onClick={() => navigate(`/routines/${routine.id}/edit`)}
                             >
                                 수정
+                            </button>
+                            <button
+                                className="text-red-500 text-sm hover:underline"
+                                onClick={() => handleDelete(routine.id)}
+                            >
+                                🗑 삭제
                             </button>
                         </div>
                     </div>
