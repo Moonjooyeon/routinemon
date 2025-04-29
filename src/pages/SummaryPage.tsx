@@ -57,8 +57,7 @@ const SummaryPage = () => {
             { question_type: 'personality', answer: survey.personality },
             { question_type: 'self_state', answer: survey.selfState },
             { question_type: 'emotions', answer: survey.emotions.join(', ') },
-            { question_type: 'obstacle', answer: survey.obstacle },
-            { question_type: 'partner_type', answer: survey.partnerType },
+            { question_type: 'obstacle', answer: survey.obstacle }
         ];
 
         for (const entry of entries) {
@@ -279,12 +278,14 @@ const SummaryPage = () => {
                         <label>루틴 이모지:</label>
                         <input
                             type="text"
+
                             value={routineSettings.emoji}
                             onChange={(e) =>
                                 setRoutineSettings({ ...routineSettings, emoji: e.target.value })
                             }
                             placeholder="이모지를 넣으면 더 귀여워요! "
                             style={{ marginLeft: '0.5rem' }}
+                            size={10}
                         />
                     </div>
 
