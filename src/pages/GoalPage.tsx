@@ -1,11 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useSurvey } from '../content/SurveyContext';
-import { useState } from 'react';
 
 const GoalPage = () => {
     const { survey, setSurvey } = useSurvey();
     const navigate = useNavigate();
-    const [customGoal, setCustomGoal] = useState('');
 
     const toggleGoal = (goal: string) => {
         const updated = survey.goals.includes(goal)
@@ -13,13 +11,6 @@ const GoalPage = () => {
             : [...survey.goals, goal];
 
         setSurvey({ ...survey, goals: updated });
-    };
-
-    const handleCustomGoalSubmit = () => {
-        if (customGoal.trim()) {
-            setSurvey({ ...survey, goals: [...survey.goals, customGoal.trim()] });
-            setCustomGoal('');
-        }
     };
 
     return (
@@ -72,20 +63,6 @@ const GoalPage = () => {
                 />{' '}
                 일단, 작심삼일 말고 작심 ‘사일’만 해도 좋겠어
             </label>
-
-            <div style={{ marginTop: '1rem' }}>
-                <label>
-                    기타: 직접 말해줄래요?
-                    <input
-                        type="text"
-                        value={customGoal}
-                        onChange={(e) => setCustomGoal(e.target.value)}
-                        placeholder="나만의 목표 입력"
-                        style={{ marginLeft: '0.5rem' }}
-                    />
-                </label>
-                <button onClick={handleCustomGoalSubmit} style={{ marginLeft: '1rem' }}>추가</button>
-            </div>
 
             <div style={{ marginTop: '2rem' }}>
                 <button onClick={() => navigate('/time')}>다음</button>

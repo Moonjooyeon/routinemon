@@ -15,6 +15,7 @@ interface Survey {
     selfState: string;
     emotions: string[];
     obstacle: string;
+    customInput : string;
 }
 
 interface SurveyProviderProps {
@@ -30,7 +31,8 @@ const initialSurvey: Survey = {
     personality: '',
     selfState: '',
     emotions: [],
-    obstacle: ''
+    obstacle: '',
+    customInput: ''
 };
 
 export type SurveyContextType = {

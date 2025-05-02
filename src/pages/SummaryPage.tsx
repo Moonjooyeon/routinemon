@@ -7,136 +7,103 @@ import { prettySurveySummary } from '../utils/prettySurvey';
 import { getGuestId } from '../utils/guest';
 import axios from 'axios';
 
-interface RoutineSettings {
-    recurrenceType: string;
-    daysOfWeek: string[];
-    timesPerWeek: number;
-    startDate: string;
-    endDate: string;
-    executionTime: string;
-    color: string;
-    showInHeatmap: boolean;
-    emoji: string;
-}
-
 interface RoutineItem {
     text: string;
     isEditing: boolean;
+    color: string;
+    emoji: string;
+    daysOfWeek: string[];
+    group?: string;
 }
 
 const SummaryPage = () => {
     const { survey } = useSurvey();
     const navigate = useNavigate();
     const guestId = getGuestId();
+    const [customGroups, setCustomGroups] = useState<string[]>([]);
 
+    const [customInput, setCustomInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [rawResult, setRawResult] = useState('');
     const [routines, setRoutines] = useState<string[]>([]);
     const [selectedRoutines, setSelectedRoutines] = useState<RoutineItem[]>([]);
     const [confirmed, setConfirmed] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-
-    const [routineSettings, setRoutineSettings] = useState<RoutineSettings>({
-        recurrenceType: 'daily',
-        daysOfWeek: [],
-        timesPerWeek: 3,
-        startDate: '',
-        endDate: '',
-        executionTime: '',
-        color: '#FFB6C1',
-        showInHeatmap: true,
-        emoji: '',
-    });
-
-    const submitUserSurveyToBackend = async () => {
-        const entries = [
-            { question_type: 'goals', answer: survey.goals.join(', ') },
-            { question_type: 'preferred_time', answer: survey.timeZone },
-            { question_type: 'time_per_routine', answer: survey.timePerRoutine },
-            { question_type: 'feedback_style', answer: survey.feedbackStyle },
-            { question_type: 'personality', answer: survey.personality },
-            { question_type: 'self_state', answer: survey.selfState },
-            { question_type: 'emotions', answer: survey.emotions.join(', ') },
-            { question_type: 'obstacle', answer: survey.obstacle }
-        ];
-
-        for (const entry of entries) {
-            await axios.post('http://localhost:8080/user-survey-answers', {
-                guest_id: guestId,
-                question_type: entry.question_type,
-                answer: entry.answer,
-            });
-        }
-    };
 
     const submitFinalRoutineToBackend = async () => {
         for (const routine of selectedRoutines) {
             await axios.post('http://localhost:8080/routines', {
                 guest_id: guestId,
                 title: routine.text,
-                recurrence_type: routineSettings.recurrenceType,
-                days_of_week: routineSettings.daysOfWeek,
-                times_per_week: routineSettings.timesPerWeek,
-                start_date: routineSettings.startDate,
-                end_date: routineSettings.endDate,
+                recurrence_type: 'weekly',
+                days_of_week: routine.daysOfWeek,
+                times_per_week: 0,
+                start_date: '',
+                end_date: '',
                 execution_times: survey.execution_times,
-                color: routineSettings.color,
-                show_in_heatmap: routineSettings.showInHeatmap,
-                emoji: routineSettings.emoji,
+                color: routine.color,
+                show_in_heatmap: true,
+                emoji: routine.emoji,
             });
         }
     };
 
+   /* const submitUserSurveyToBackend = async () => {
+        const entries = [
+            { question_type: 'goals', answer: survey.goals?.join(', ') },
+            { question_type: 'preferred_time', answer: survey.timeZone },
+            { question_type: 'time_per_routine', answer: survey.timePerRoutine },
+            { question_type: 'feedback_style', answer: survey.feedbackStyle },
+            { question_type: 'self_state', answer: survey.selfState },
+            { question_type: 'personality', answer: survey.personality },
+            { question_type: 'emotions', answer: survey.emotions?.join(', ') || '' },
+            { question_type: 'obstacle', answer: survey.obstacle },
+        ];
+
+        for (const entry of entries) {
+            if (entry.answer) {
+                await axios.post('http://localhost:8080/user-survey-answers', {
+                    guest_id: guestId,
+                    question_type: entry.question_type,
+                    answer: entry.answer,
+                });
+            }
+        }
+    };*/
+
     const handleGenerate = async () => {
         setLoading(true);
-        setRawResult('');
         setRoutines([]);
         setSelectedRoutines([]);
         setConfirmed(false);
-        setShowSettings(false);
-
-        // 백엔드 저장 실패해도 GPT는 계속 실행
-        try {
-            await submitUserSurveyToBackend();
-        } catch (err) {
-            console.warn('⚠️ 설문 응답 저장 실패 (백엔드 꺼져있을 수 있음)', err);
-        }
-
-        const prompt = generateRoutinePrompt(survey);
 
         try {
+           // await submitUserSurveyToBackend();
+            const prompt = generateRoutinePrompt(survey, customInput);
             const response = await chatWithGPT(prompt);
-            setRawResult(response);
 
             const parsed = response
                 .split(/\n\d+\.\s/)
                 .filter(r => r.trim() !== '')
-                .map(r => r.trim());
+                .map(r => r.trim().replace(/^\d+\.\s*/, ''));
 
             setRoutines(parsed);
         } catch (err) {
             console.error('❌ GPT 호출 실패:', err);
-            setRawResult('오류가 발생했어요. 다시 시도해 주세요.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleConfirm = () => {
+    const handleFinalSubmit = async () => {
         if (selectedRoutines.length === 0) {
             alert('루틴을 최소 1개 이상 선택해주세요!');
             return;
         }
-        setShowSettings(true);
-    };
 
-    const handleFinalSubmit = async () => {
-        if (
-            routineSettings.recurrenceType === 'weekly' &&
-            routineSettings.daysOfWeek.length === 0
-        ) {
-            alert('요일을 최소 1개 이상 선택해주세요.');
-            return;
+        for (const routine of selectedRoutines) {
+            if (routine.daysOfWeek.length === 0) {
+                alert('루틴 요일을 지정해 주세요!');
+                return;
+            }
         }
 
         await submitFinalRoutineToBackend();
@@ -155,16 +122,22 @@ const SummaryPage = () => {
                 ))}
             </ul>
 
+            <div style={{ marginTop: '2rem' }}>
+                <label>
+                    나의 의견을 말해보세요!:
+                    <input
+                        type="text"
+                        value={customInput}
+                        onChange={(e) => setCustomInput(e.target.value)}
+                        placeholder="예: 스트레칭하고 마음 다잡기"
+                        style={{ marginLeft: '0.5rem', width: '60%' }}
+                    />
+                </label>
+            </div>
+
             <button onClick={handleGenerate} disabled={loading} style={{ marginTop: '1rem' }}>
                 {loading ? '생성 중...' : '✨ AI 루틴 생성하기'}
             </button>
-
-            {rawResult && routines.length === 0 && (
-                <div style={{ marginTop: '2rem', background: '#fff6f6', padding: '1rem' }}>
-                    <h3>⚠️ GPT 응답</h3>
-                    <pre>{rawResult}</pre>
-                </div>
-            )}
 
             {routines.length > 0 && (
                 <div style={{ marginTop: '2rem' }}>
@@ -177,7 +150,7 @@ const SummaryPage = () => {
                                 setSelectedRoutines(
                                     already
                                         ? selectedRoutines.filter(r => r.text !== routine)
-                                        : [...selectedRoutines, { text: routine, isEditing: false }]
+                                        : [...selectedRoutines, { text: routine, isEditing: false, color: '#FFB6C1', emoji: '', daysOfWeek: [], group: '기본' }]
                                 );
                             }}
                             style={{
@@ -196,7 +169,7 @@ const SummaryPage = () => {
                                 cursor: 'pointer',
                             }}
                         >
-                            <strong>{idx + 1}.</strong> {routine}
+                            <strong>{idx +1}.</strong> {routine}
                         </button>
                     ))}
                 </div>
@@ -204,162 +177,145 @@ const SummaryPage = () => {
 
             {selectedRoutines.length > 0 && (
                 <div style={{ marginTop: '2rem' }}>
-                    <h3>✅ 선택한 루틴 목록</h3>
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {selectedRoutines.map((routineItem, idx) => (
-                            <li
-                                key={idx}
-                                style={{
-                                    marginBottom: '1rem',
-                                    backgroundColor: '#f4f4f4',
-                                    borderRadius: '8px',
-                                    padding: '1rem',
-                                }}
-                            >
-                                {routineItem.isEditing ? (
-                                    <>
-                    <textarea
-                        value={routineItem.text}
-                        onChange={(e) => {
-                            const updated = [...selectedRoutines];
-                            updated[idx].text = e.target.value;
-                            setSelectedRoutines(updated);
-                        }}
-                        rows={3}
-                        style={{ width: '100%', marginBottom: '0.5rem' }}
-                    />
-                                        <button onClick={() => {
+                    <h3>✅ 선택한 루틴별 설정</h3>
+                    {selectedRoutines.map((routineItem, idx) => (
+                        <div key={idx} style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f4f4f4', borderRadius: '8px' }}>
+                            {routineItem.isEditing ? (
+                                <>
+                                    <textarea
+                                        value={routineItem.text}
+                                        onChange={(e) => {
                                             const updated = [...selectedRoutines];
-                                            updated[idx].isEditing = false;
+                                            updated[idx].text = e.target.value;
                                             setSelectedRoutines(updated);
-                                        }}>
-                                            수정 완료
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div style={{ marginBottom: '0.5rem' }}>{idx + 1}. {routineItem.text}</div>
-                                        <button onClick={() => {
+                                        }}
+                                        rows={3}
+                                        style={{ width: '100%', marginBottom: '0.5rem' }}
+                                    />
+                                    <button onClick={() => {
+                                        const updated = [...selectedRoutines];
+                                        updated[idx].isEditing = false;
+                                        setSelectedRoutines(updated);
+                                    }}>
+                                        수정 완료
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div style={{ marginBottom: '0.5rem' }}>{idx + 1}. {routineItem.text}</div>
+                                    <button onClick={() => {
+                                        const updated = [...selectedRoutines];
+                                        updated[idx].isEditing = true;
+                                        setSelectedRoutines(updated);
+                                    }}>
+                                        ✏️ 수정하기
+                                    </button>
+                                </>
+                            )}
+
+                            {/* 색상 선택 */}
+                            <div style={{ marginTop: '1rem' }}>
+                                <label>색상:</label>
+                                <input
+                                    type="color"
+                                    value={routineItem.color}
+                                    onChange={(e) => {
+                                        const updated = [...selectedRoutines];
+                                        updated[idx].color = e.target.value;
+                                        setSelectedRoutines(updated);
+                                    }}
+                                    style={{ marginLeft: '0.5rem' }}
+                                />
+                            </div>
+
+                            {/* 이모지 입력 */}
+                            <div style={{ marginTop: '1rem' }}>
+                                <label>이모지:</label>
+                                <input
+                                    type="text"
+                                    value={routineItem.emoji}
+                                    onChange={(e) => {
+                                        const updated = [...selectedRoutines];
+                                        updated[idx].emoji = e.target.value;
+                                        setSelectedRoutines(updated);
+                                    }}
+                                    placeholder="🌱 💪 🧘"
+                                    style={{ marginLeft: '0.5rem' }}
+                                    size={20}
+                                />
+                            </div>
+
+                            {/* 요일 선택 */}
+                            <div style={{ marginTop: '1rem' }}>
+                                <label>요일 선택:</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
+                                        <label key={day}>
+                                            <input
+                                                type="checkbox"
+                                                checked={routineItem.daysOfWeek.includes(day)}
+                                                onChange={(e) => {
+                                                    const updated = [...selectedRoutines];
+                                                    if (e.target.checked) {
+                                                        updated[idx].daysOfWeek.push(day);
+                                                    } else {
+                                                        updated[idx].daysOfWeek = updated[idx].daysOfWeek.filter((d) => d !== day);
+                                                    }
+                                                    setSelectedRoutines(updated);
+                                                }}
+                                            />
+                                            {day}
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {/* 그룹 선택 */}
+                                <div style={{ marginTop: '1rem' }}>
+                                    <label>그룹 선택:</label>
+                                    <select
+                                        value={routineItem.group}
+                                        onChange={(e) => {
                                             const updated = [...selectedRoutines];
-                                            updated[idx].isEditing = true;
+                                            updated[idx].group = e.target.value;
                                             setSelectedRoutines(updated);
-                                        }}>
-                                            ✏️ 수정하기
-                                        </button>
-                                    </>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
+                                        }}
+                                        style={{ marginLeft: '0.5rem' }}
+                                    >
+                                        {/* 기존 그룹 목록 렌더링 */}
+                                        <option value="기본">기본</option>
+                                        {customGroups.map((group) => (
+                                            <option key={group} value={group}>{group}</option>
+                                        ))}
+                                    </select>
 
-                    <div style={{ marginTop: '1rem' }}>
-                        <button onClick={handleConfirm}>✅ 이 루틴들로 진행하기</button>
-                    </div>
-                </div>
-            )}
-
-            {showSettings && (
-                <div style={{ marginTop: '2rem' }}>
-                    <h3>🔧 루틴 설정</h3>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label>루틴 색상 선택:</label>
-                        <input
-                            type="color"
-                            value={routineSettings.color}
-                            onChange={(e) =>
-                                setRoutineSettings({ ...routineSettings, color: e.target.value })
-                            }
-                            style={{ marginLeft: '0.5rem' }}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label>루틴 이모지:</label>
-                        <input
-                            type="text"
-
-                            value={routineSettings.emoji}
-                            onChange={(e) =>
-                                setRoutineSettings({ ...routineSettings, emoji: e.target.value })
-                            }
-                            placeholder="이모지를 넣으면 더 귀여워요! "
-                            style={{ marginLeft: '0.5rem' }}
-                            size={10}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label>루틴 주기:</label>
-                        <select
-                            value={routineSettings.recurrenceType}
-                            onChange={(e) =>
-                                setRoutineSettings({ ...routineSettings, recurrenceType: e.target.value })
-                            }
-                            style={{ marginLeft: '0.5rem' }}
-                        >
-                            <option value="daily">매일</option>
-                            <option value="weekly">특정 요일</option>
-                            <option value="nTimesPerWeek">주 N회</option>
-                        </select>
-                    </div>
-
-                    {routineSettings.recurrenceType === 'weekly' && (
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label>루틴 요일 선택:</label>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                {["월", "화", "수", "목", "금", "토", "일"].map((day) => (
-                                    <label key={day}>
+                                    {/* 새 그룹 추가 */}
+                                    <div style={{ marginTop: '0.5rem' }}>
                                         <input
-                                            type="checkbox"
-                                            value={day}
-                                            checked={routineSettings.daysOfWeek.includes(day)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    setRoutineSettings({
-                                                        ...routineSettings,
-                                                        daysOfWeek: [...routineSettings.daysOfWeek, day],
-                                                    });
-                                                } else {
-                                                    setRoutineSettings({
-                                                        ...routineSettings,
-                                                        daysOfWeek: routineSettings.daysOfWeek.filter((d) => d !== day),
-                                                    });
+                                            type="text"
+                                            placeholder="새 그룹명 입력"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    const newGroup = e.currentTarget.value.trim();
+                                                    if (newGroup && !customGroups.includes(newGroup)) {
+                                                        setCustomGroups([...customGroups, newGroup]);
+                                                        const updated = [...selectedRoutines];
+                                                        updated[idx].group = newGroup;
+                                                        setSelectedRoutines(updated);
+                                                        e.currentTarget.value = '';
+                                                    }
                                                 }
                                             }}
-                                            style={{ marginLeft: '0.5rem', marginRight: '0.25rem' }}
                                         />
-                                        {day}
-                                    </label>
-                                ))}
+                                        <small style={{ marginLeft: '0.5rem' }}>Enter로 그룹 추가</small>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
-                    )}
-
-
-                    {routineSettings.recurrenceType === 'nTimesPerWeek' && (
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label>주 몇 회:</label>
-                            <input
-                                type="number"
-                                value={routineSettings.timesPerWeek}
-                                onChange={(e) =>
-                                    setRoutineSettings({
-                                        ...routineSettings,
-                                        timesPerWeek: parseInt(e.target.value),
-                                    })
-                                }
-                                style={{ marginLeft: '0.5rem', width: '60px' }}
-                            />
-                        </div>
-                    )}
+                    ))}
 
                     <button
                         onClick={handleFinalSubmit}
-                        disabled={
-                            routineSettings.recurrenceType === 'weekly' &&
-                            routineSettings.daysOfWeek.length === 0
-                        }
                         style={{
                             marginTop: '1rem',
                             padding: '1rem',
