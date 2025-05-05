@@ -1,96 +1,193 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { getGuestId } from '../utils/guest';
-import { chatWithGPT } from '../utils/chatWithGPT';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import SurveyModal from '../components/SurveyModal';
+// import axios from 'axios';
 
-const RoutineEditPage = () => {
-    const { id } = useParams();
+
+interface RoutineItem {
+    text: string;
+    isEditing: boolean;
+    color: string;
+    emoji: string;
+    daysOfWeek: string[];
+    group: string;
+}
+
+const RoutineCustomizePage = () => {
+    const location = useLocation();
     const navigate = useNavigate();
-    const guestId = getGuestId();
+    const initialRoutines = (location.state?.selectedRoutines || []) as RoutineItem[];
 
-    const [routine, setRoutine] = useState({
-        title: '',
-        recurrence_type: 'daily',
-        execution_time: '',
-    });
-    const [aiSuggestion, setAiSuggestion] = useState('');
+    const [routines, setRoutines] = useState<RoutineItem[]>(initialRoutines);
+    const [customGroups, setCustomGroups] = useState<string[]>([]);
+    const [modalOpen, setModalOpen] = useState(true);
 
-    useEffect(() => {
-        const fetchRoutine = async () => {
-            const res = await axios.get(`https://your-backend-url.com/routines/${id}?guest_id=${guestId}`);
-            setRoutine(res.data);
-        };
-        fetchRoutine();
-    }, [id, guestId]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setRoutine((prev) => ({ ...prev, [name]: value }));
+    const updateRoutine = (idx: number, updated: Partial<RoutineItem>) => {
+        const newRoutines = [...routines];
+        newRoutines[idx] = { ...newRoutines[idx], ...updated };
+        setRoutines(newRoutines);
     };
 
+    const handleSubmit = async () => {
 
-    const handleAISuggestion = async () => {
-        const prompt = `루틴 수정 제안: ${routine.title}\n실행 시간: ${routine.execution_time}`;
-        const suggestion = await chatWithGPT(prompt);
-        setAiSuggestion(suggestion);
-    };
+        console.log('📦 저장할 루틴 목록:', routines);
 
-    const handleSave = async () => {
-        try {
-            await axios.put(`https://your-backend-url.com/routines/${id}`, {
-                guest_id: guestId,
-                ...routine,
-            });
-            alert('루틴이 저장되었습니다.');
-            navigate('/routines');
-        } catch (err) {
-            console.error('❌ 저장 실패', err);
-            alert('저장 중 오류 발생');
+        // ✅ 저장 성공 시뮬레이션 (1초 후 /main 이동)
+        setTimeout(() => {
+            console.log('✅ 루틴 저장 완료됨 (모의)');
+            navigate('/main');
+        }, 1000);
+       /* const guestId = localStorage.getItem('guest_id');
+        if (!guestId) {
+            alert('게스트 ID 없음');
+            return;
         }
+
+        try {
+           await axios.post('/routines', routines, {
+                headers: {
+                    'X-Guest-Id': guestId,
+                    'Content-Type': 'application/json'
+                }
+            });
+            navigate('/main');
+        } catch (err) {
+            console.error('❌ 루틴 저장 실패:', err);
+            alert('저장 실패! 나중에 다시 시도해 주세요.');
+        }*/
     };
+
 
     return (
-        <div className="p-6 max-w-xl mx-auto">
-            <h2 className="text-xl font-semibold mb-4">루틴 수정</h2>
-            <label className="block mb-2">루틴 내용:</label>
-            <textarea
-                name="title"
-                value={routine.title}
-                onChange={handleChange}
-                rows={4}
-                className="w-full border p-2 rounded mb-4"
-            />
+        <SurveyModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onNext={handleSubmit}
+            showNext={false}
+        >
+            <h2>🎨 선택한 루틴 꾸미기</h2>
+            <p>루틴의 이름, 색상, 이모지, 요일, 그룹을 자유롭게 설정하세요!</p>
 
-            <label className="block mb-2">실행 시간:</label>
-            <select
-                name="execution_time"
-                value={routine.execution_time}
-                onChange={handleChange}
-                className="w-full border p-2 rounded mb-4"
-            >
-                <option value="">선택 안 함</option>
-                <option value="08:00">오전 8시</option>
-                <option value="22:00">밤 10시</option>
-                <option value="기상 직후">기상 직후</option>
-                <option value="잠들기 전">잠들기 전</option>
-            </select>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem',maxHeight:'400px', overflowY: 'auto',paddingRight: '0.5rem' }}>
+                {routines.map((routine, idx) => (
+                    <div
+                        key={idx}
+                        style={{
+                            padding: '1.5rem',
+                            background: '#fefefe',
+                            border: '1px solid #ddd',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        {/* 루틴 이름 수정 */}
+                        <label style={{ display: 'block', marginBottom: '0.75rem' }}>
+                            <strong>루틴 이름:</strong>
+                            <input
+                                type="text"
+                                value={routine.text}
+                                onChange={(e) => updateRoutine(idx, { text: e.target.value })}
+                                style={{ marginLeft: '0.5rem', width: '80%' }}
+                            />
+                        </label>
 
-            <button onClick={handleAISuggestion} className="bg-purple-500 text-white px-4 py-2 rounded mr-2">
-                🤖 AI 추천 받기
-            </button>
-            <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded">
-                💾 저장
-            </button>
+                        <label style={{ display: 'block', marginTop: '1rem' }}>
+                            <strong>색상 선택:</strong>
+                            <input
+                                type="color"
+                                value={routine.color}
+                                onChange={(e) => updateRoutine(idx, { color: e.target.value })}
+                                style={{ marginLeft: '0.5rem' }}
+                            />
+                        </label>
 
-            {aiSuggestion && (
-                <div className="mt-4 p-4 bg-gray-100 rounded">
-                    <h4 className="font-bold mb-2">AI 제안:</h4>
-                    <p>{aiSuggestion}</p>
+                        <label style={{ display: 'block', marginTop: '1rem' }}>
+                            <strong>이모지:</strong>
+                            <input
+                                type="text"
+                                value={routine.emoji}
+                                onChange={(e) => updateRoutine(idx, { emoji: e.target.value })}
+                                placeholder="🌱 💪 🧘"
+                                style={{ marginLeft: '0.5rem' }}
+                                size={10}
+                            />
+                        </label>
+
+                        <label style={{ display: 'block', marginTop: '1rem' }}>
+                            <strong>요일 선택:</strong>
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
+                                <label key={day} style={{ marginRight: '1rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={routine.daysOfWeek.includes(day)}
+                                        onChange={(e) => {
+                                            const newDays = e.target.checked
+                                                ? [...routine.daysOfWeek, day]
+                                                : routine.daysOfWeek.filter((d) => d !== day);
+                                            updateRoutine(idx, { daysOfWeek: newDays });
+                                        }}
+                                    />{' '}
+                                    {day}
+                                </label>
+                            ))}
+                        </div>
+
+                        <label style={{ display: 'block', marginTop: '1rem' }}>
+                            <strong>그룹 선택:</strong>
+                        </label>
+                        <select
+                            value={routine.group}
+                            onChange={(e) => updateRoutine(idx, { group: e.target.value })}
+                            style={{ marginTop: '0.5rem' }}
+                        >
+                            <option value="기본">기본</option>
+                            {customGroups.map((group) => (
+                                <option key={group} value={group}>
+                                    {group}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <input
+                                type="text"
+                                placeholder="새 그룹 추가"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const newGroup = e.currentTarget.value.trim();
+                                        if (newGroup && !customGroups.includes(newGroup)) {
+                                            setCustomGroups([...customGroups, newGroup]);
+                                            updateRoutine(idx, { group: newGroup });
+                                            e.currentTarget.value = '';
+                                        }
+                                    }
+                                }}
+                            />{' '}
+                            <small>Enter로 그룹 추가</small>
+                        </div>
+                    </div>
+                ))}
+                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                    <button
+                        onClick={handleSubmit}
+                        style={{
+                            backgroundColor: '#6C63FF',
+                            color: 'white',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            fontSize: '1rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        🎉 설정 완료 및 저장하기
+                    </button>
                 </div>
-            )}
-        </div>
+            </div>
+        </SurveyModal>
     );
 };
 
-export default RoutineEditPage;
+export default RoutineCustomizePage;
